@@ -1,0 +1,16 @@
+import test from 'node:test';
+import assert from 'node:assert/strict';
+import {datasets} from '../js/data/datasets.js';
+import {contingency} from '../js/statistics/contingency.js';
+import {chiSquareTest,regularizedGammaQ} from '../js/statistics/chiSquare.js';
+const approx=(a,b,tol=1e-8)=>assert.ok(Math.abs(a-b)<tol,`${a} differs from ${b}`);
+test('study expected frequencies',()=>assert.deepEqual(chiSquareTest(contingency(datasets.study.records)).expected,[[35,15],[35,15]]));
+test('study chi-square and p-value',()=>{const s=chiSquareTest(contingency(datasets.study.records));approx(s.statistic,100/21,1e-12);approx(s.pValue,0.029096331741252,1e-8);assert.equal(s.degreesOfFreedom,1);assert.equal(s.rejectNull,true)});
+test('study Cramér V',()=>approx(chiSquareTest(contingency(datasets.study.records)).cramerV,Math.sqrt(1/21),1e-12));
+test('balanced dataset has no association',()=>{const s=chiSquareTest(contingency(datasets.independent.records));approx(s.statistic,0);approx(s.pValue,1);assert.equal(s.rejectNull,false)});
+test('strong association has very small p-value',()=>{const s=chiSquareTest(contingency(datasets.strong.records));approx(s.statistic,64);assert.ok(s.pValue<1e-12)});
+test('alpha changes decision',()=>assert.equal(chiSquareTest(contingency(datasets.study.records),{alpha:0.01}).rejectNull,false));
+test('invalid alpha rejected',()=>assert.throws(()=>chiSquareTest(contingency(datasets.study.records),{alpha:1})));
+test('single category cannot use chi-square test',()=>assert.throws(()=>chiSquareTest(contingency([{x:'A',y:'B'}]))));
+test('small expected counts flagged',()=>{const t=contingency([{x:'A',y:'Y'},{x:'A',y:'N'},{x:'B',y:'Y'},{x:'B',y:'N'}]);assert.equal(chiSquareTest(t).below5,4)});
+test('gamma Q known values',()=>{approx(regularizedGammaQ(1,1),Math.exp(-1));approx(regularizedGammaQ(2,1),2/Math.E);approx(regularizedGammaQ(0.5,0),1)});

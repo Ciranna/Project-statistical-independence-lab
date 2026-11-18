@@ -1,0 +1,10 @@
+import test from 'node:test';import assert from 'node:assert/strict';
+import {contingency} from '../js/statistics/contingency.js';
+import {datasets} from '../js/data/datasets.js';
+test('study table matches expected observed counts',()=>{const t=contingency(datasets.study.records);assert.deepEqual(t.counts,[[40,10],[30,20]]);assert.deepEqual(t.rowTotals,[50,50]);assert.deepEqual(t.colTotals,[70,30]);assert.equal(t.n,100)});
+test('marginals sum to one',()=>{const t=contingency(datasets.study.records);assert.equal(t.rowMarginal.reduce((a,b)=>a+b,0),1);assert.equal(t.colMarginal.reduce((a,b)=>a+b,0),1)});
+test('conditional row probabilities sum to one',()=>{const t=contingency(datasets.strong.records);for(const row of t.conditionalByRow)assert.ok(Math.abs(row.reduce((a,b)=>a+b,0)-1)<1e-12)});
+test('conditional column probabilities sum to one',()=>{const t=contingency(datasets.study.records);for(let j=0;j<t.cols.length;j++)assert.ok(Math.abs(t.conditionalByColumn.reduce((s,row)=>s+row[j],0)-1)<1e-12)});
+test('reject empty dataset',()=>assert.throws(()=>contingency([])));
+test('reject missing category',()=>assert.throws(()=>contingency([{x:'A',y:''}])));
+test('single category works',()=>{const t=contingency([{x:'A',y:'Yes'}]);assert.deepEqual(t.counts,[[1]]);assert.deepEqual(t.conditionalByRow,[[1]])});
